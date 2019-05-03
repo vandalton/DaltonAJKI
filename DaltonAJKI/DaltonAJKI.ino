@@ -19,20 +19,17 @@
 #define OUT_OPTION A2
 #define OUT_RESET A3
 
+int outputs[9] = {OUT_UP, OUT_DOWN, OUT_LEFT, OUT_RIGHT, OUT_FIRE, OUT_START, OUT_SELECT, OUT_OPTION, OUT_RESET};
+
 USB Usb;
 PS4USB PS4(&Usb);
 
 void setup() {
-  pinMode(OUT_UP, OUTPUT);
-  pinMode(OUT_DOWN, OUTPUT);
-  pinMode(OUT_LEFT, OUTPUT);
-  pinMode(OUT_RIGHT, OUTPUT);
-  pinMode(OUT_FIRE, OUTPUT);
-  
-  pinMode(OUT_START, OUTPUT);
-  pinMode(OUT_SELECT, OUTPUT);
-  pinMode(OUT_OPTION, OUTPUT);
-  pinMode(OUT_RESET, OUTPUT);
+  for(int i=0;i<9;++i)
+  {
+    pinMode(outputs[i], OUTPUT);
+    digitalWrite(outputs[i], HIGH);
+  }
   
   if (Usb.Init() == -1) {
     while (1); // Halt

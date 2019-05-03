@@ -11,6 +11,11 @@ It allows to connect PS2 keyboard to Atari. The idea of DaltonAJKI was to create
 
 The initial version (2019-IV-30) can only handle PlayStation 4 gamepad connected by cable. Support for other peripherals is planned.
 
+## History
+
+2019-05-04: Added support for PS4 via Bluetooth
+2019-04-30: Initial version, PS4 joypad connected by cable supported.
+
 ## Remarks
 
 Use it at your own risk. Remember that there are two versions of USB Host Shield: 3.3V and 5V. Atari works with 5V. This code was tested with 5V-version of USB Host Shield only and won't work with 3.3V.
