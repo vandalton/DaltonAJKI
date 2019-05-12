@@ -14,12 +14,17 @@
 #define OUT_RIGHT 5
 #define OUT_FIRE 6
 
-#define OUT_START A0 // didn't try these buttons yet
+#define OUT_KR1 A5
+
+#define OUT_START A0
 #define OUT_SELECT A1
 #define OUT_OPTION A2
-#define OUT_RESET A3
 
-int outputs[9] = {OUT_UP, OUT_DOWN, OUT_LEFT, OUT_RIGHT, OUT_FIRE, OUT_START, OUT_SELECT, OUT_OPTION, OUT_RESET};
+int outputs[9] = {OUT_UP, OUT_DOWN, OUT_LEFT, OUT_RIGHT, OUT_FIRE, OUT_START, OUT_SELECT, OUT_OPTION, OUT_KR1};
+bool keyboard[64];
+volatile int KRCounter = 0;
+volatile int pc;
+volatile int KR5Last = 0;
 
 USB Usb;
 PS4USB PS4(&Usb);
@@ -30,10 +35,27 @@ void setup() {
     pinMode(outputs[i], OUTPUT);
     digitalWrite(outputs[i], HIGH);
   }
+
+  for(int i=0;i<64;++i)
+  {
+    keyboard[i] = false;
+  }
+
+  pinMode(A3, INPUT);
+  pinMode(A4, INPUT);
+
+  Serial.begin(115200);
   
   if (Usb.Init() == -1) {
     while (1); // Halt
   }
+
+  cli();
+  
+  PCICR |= bit (PCIE1);     // interrupt port c
+  PCMSK1 |= bit (PCINT11);  // pin A3
+  
+  sei();
 }
 
 void loop() {
@@ -49,6 +71,24 @@ void loop() {
     digitalWrite(OUT_START, PS4.getButtonPress(OPTIONS) ? LOW : HIGH);
     digitalWrite(OUT_SELECT, PS4.getButtonPress(SHARE) ? LOW : HIGH);
     digitalWrite(OUT_OPTION, PS4.getButtonPress(TOUCHPAD) ? LOW : HIGH);
-    digitalWrite(OUT_RESET, PS4.getButtonPress(OPTIONS) && PS4.getButtonPress(SHARE) ? LOW : HIGH); 
+    //digitalWrite(OUT_RESET, PS4.getButtonPress(OPTIONS) && PS4.getButtonPress(SHARE) ? LOW : HIGH); 
+
+    keyboard[0] = PS4.getButtonPress(TRIANGLE);
+    keyboard[63] = PS4.getButtonPress(SQUARE);
   }
 }
+
+ISR(PCINT1_vect) {
+  pc = PINC;
+  
+  if(KR5Last && !(pc & (1 << 4))) {
+    KRCounter = 0;
+  }
+
+  KR5Last = pc & (1 << 4);
+
+  digitalWrite(OUT_KR1, keyboard[KRCounter]? LOW : HIGH);
+  
+  ++KRCounter;
+}
+
