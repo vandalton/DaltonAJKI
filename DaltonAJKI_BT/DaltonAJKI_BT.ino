@@ -17,12 +17,13 @@
 #define OUT_FIRE 6
 
 #define OUT_KR1 A5
+#define OUT_KR2 7
 
 #define OUT_START A0
 #define OUT_SELECT A1
 #define OUT_OPTION A2
 
-int outputs[9] = {OUT_UP, OUT_DOWN, OUT_LEFT, OUT_RIGHT, OUT_FIRE, OUT_START, OUT_SELECT, OUT_OPTION, OUT_KR1};
+int outputs[10] = {OUT_UP, OUT_DOWN, OUT_LEFT, OUT_RIGHT, OUT_FIRE, OUT_START, OUT_SELECT, OUT_OPTION, OUT_KR1, OUT_KR2};
 
 volatile bool up = false, down = false, left = false, right = false, fire = false, start = false, select = false, option = false;
 
@@ -41,7 +42,7 @@ BTHID bthid(&Btd);
 KbdRptParser keyboardPrs;
 
 void setup() {  
-  for(int i=0;i<9;++i)
+  for(int i=0;i<10;++i)
   {
     pinMode(outputs[i], OUTPUT);
     digitalWrite(outputs[i], HIGH);
@@ -117,6 +118,7 @@ ISR(PCINT1_vect) {
   KR5Last = pc & (1 << 4);
 
   digitalWrite(OUT_KR1, keyboardPrs.IsKeyPressed(KRCounter)? LOW : HIGH);
+  digitalWrite(OUT_KR2, keyboardPrs.IsModifierPressed(KRCounter) ? LOW : HIGH);
   
   ++KRCounter;
 }

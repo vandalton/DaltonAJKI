@@ -7,6 +7,7 @@ class KbdRptParser : public KeyboardReportParser {
     KbdRptParser();
     bool IsKeyPressed(int number);
     bool IsSpecialPressed(int number);
+    bool IsModifierPressed(int number);
   
   protected:
     virtual uint8_t HandleLockingKeys(USBHID *hid, uint8_t key);
@@ -18,71 +19,72 @@ class KbdRptParser : public KeyboardReportParser {
   private:
     bool keyboardState[64];
     bool specialState[9]; // start, select, option, reset, up, down, left, right, fire
+    bool modifierState[3]; // break, shift, control
     
     void PrintKey(uint8_t mod, uint8_t key);
     void HandleKey(uint8_t c, uint8_t key, bool down);
     int KeyToNumber(uint8_t c, uint8_t key);
-    int keyNumber[47*2] = {
-      'a', 0, 
-      's', 1, 
-      'g', 2, 
-      'd', 5, 
-      'h', 6, 
-      'f', 7,
+    int keyNumber[4*2] = {
       '>', 8,
       '<', 9, 
-      '8', 10, 
-      '7', 12, 
-      '0', 13, 
-      '9', 15,
-      'q', 16,
-      'w', 17, 
-      't', 18, 
-      'y', 20, 
-      'e', 21, 
-      'r', 23,
-      '/', 25,
-      'm', 26,
-      'n', 28, 
-      '.', 29,
-      ' ', 30, 
-      ',', 31, 
-      '1', 32, 
-      '2', 33,
-      '5', 34, 
-      '6', 36, 
-      '3', 37, 
-      '4', 39, 
-      'z', 40, 
-      'x', 41, 
-      'b', 42,
-      'c', 45, 
-      'v', 47, 
-      '=', 48, 
-      '-', 49, 
-      'i', 50,
-      'u', 52, 
-      'p', 53,
-      'o', 55, 
       '*', 56, 
       '+', 57, 
-      'k', 58,
-      ',', 61, 
-      'j', 62, 
-      'l', 63
     };
       
-    int nonAsciiKeyNumber[4*2] = {
+    int nonAsciiKeyNumber[50*2] = {
+      4, 0, //a 
+      22, 1, //s 
+      10, 2, //g 
+      7, 5, //d 
+      11, 6, //h 
+      9, 7, //f
+      37, 10, //8 
+      36, 12, //7 
+      39, 13, //0 
+      38, 15, //9
+      20, 16, //q
+      26, 17, //w 
+      23, 18, //t 
+      28, 20, //y 
+      8, 21, //e 
+      21, 23, //r
+      56, 25, // /
+      16, 26, //m
+      17, 28, //n 
+      55, 29, //.
+      44, 30, // space
+      54, 31, //,
+      30, 32, //1 
+      31, 33, //2
+      34, 34, //5 
+      35, 36, //6
+      32, 37, //3 
+      33, 39, //4 
+      29, 40, //z 
+      27, 41, //x 
+      5, 42, //b
+      6, 45, //c 
+      25, 47, //v 
+      46, 48, //= 
+      45, 49, //- 
+      12, 50, //i
+      24, 52, //u 
+      19, 53, //p
+      18, 55, //o 
+      14, 58, //k
+      51, 61, //; 
+      13, 62, //j 
+      15, 63, //l
+      57, 3,  //caps
       40, 51, //return
       41, 35, //esc
       42, 11, //delete
       43, 19, //tab
+      67, 46, //help (f10)
+      68, 24 // inv (f11)
     };
 
     int specialKeys[8] = {62, 63, 64, 65, 82, 81, 80, 79};
-/*
-INV   24
-HELP  46*/
 };
 
 KbdRptParser::KbdRptParser() {
@@ -91,6 +93,9 @@ KbdRptParser::KbdRptParser() {
   
   for(int i=0;i<9;++i)
     this->specialState[i] = false;
+
+  for(int i=0;i<3;++i)
+    this->modifierState[i] = false;
 }
 
 bool KbdRptParser::IsKeyPressed(int number) {
@@ -101,6 +106,17 @@ bool KbdRptParser::IsSpecialPressed(int number) {
   return this->specialState[number];
 }
 
+bool KbdRptParser::IsModifierPressed(int number) {
+  if(number == 63)
+    return this->modifierState[2];
+  if(number == 47)
+    return this->modifierState[1];
+  if(number == 15)
+    return this->modifierState[0];
+    
+  return false;
+}
+
 uint8_t KbdRptParser::HandleLockingKeys(USBHID *hid, uint8_t key) {
   uint8_t old_keys = kbdLockingKeys.bLeds;
 
@@ -108,10 +124,6 @@ uint8_t KbdRptParser::HandleLockingKeys(USBHID *hid, uint8_t key) {
     case UHS_HID_BOOT_KEY_NUM_LOCK:
       Serial.println(F("Num lock"));
       kbdLockingKeys.kbdLeds.bmNumLock = ~kbdLockingKeys.kbdLeds.bmNumLock;
-      break;
-    case UHS_HID_BOOT_KEY_CAPS_LOCK:
-      Serial.println(F("Caps lock"));
-      kbdLockingKeys.kbdLeds.bmCapsLock = ~kbdLockingKeys.kbdLeds.bmCapsLock;
       break;
     case UHS_HID_BOOT_KEY_SCROLL_LOCK:
       Serial.println(F("Scroll lock"));
@@ -154,6 +166,9 @@ void KbdRptParser::HandleKey(uint8_t c, uint8_t key, bool down) {
   for(int i=0;i<8;++i)
     if(key == this->specialKeys[i])
       this->specialState[i] = down;
+
+  if(key == 69)
+    this->modifierState[0] = down;
 }
 
 void KbdRptParser::OnKeyDown(uint8_t mod, uint8_t key) {
@@ -207,6 +222,9 @@ void KbdRptParser::OnControlKeysChanged(uint8_t before, uint8_t after) {
     Serial.println(F("RightGUI changed"));
 
   this->specialState[8] = afterMod.bmLeftCtrl;
+
+  this->modifierState[1] = afterMod.bmLeftShift || afterMod.bmRightShift;
+  this->modifierState[2] = afterMod.bmLeftCtrl || afterMod.bmRightCtrl;
 }
 
 void KbdRptParser::OnKeyPressed(uint8_t key) {
@@ -215,11 +233,11 @@ void KbdRptParser::OnKeyPressed(uint8_t key) {
 }
 
 int KbdRptParser::KeyToNumber(uint8_t c, uint8_t key) {
-  for(int tmp = 0;tmp < 47*2;tmp += 2)
+  for(int tmp = 0;tmp < 4*2;tmp += 2)
     if(this->keyNumber[tmp] == c)
       return this->keyNumber[tmp + 1];
 
-  for(int tmp = 0;tmp < 4*2;tmp += 2)
+  for(int tmp = 0;tmp < 50*2;tmp += 2)
     if(this->nonAsciiKeyNumber[tmp] == key)
       return this->nonAsciiKeyNumber[tmp + 1];
       
